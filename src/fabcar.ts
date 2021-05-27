@@ -233,7 +233,7 @@ export class FabCar extends Contract {
         return JSON.stringify(allResults);
     }
 
-    public async createCarFinance( ctx: Context, financeId: string, carId: string, payPerMonth: number, debtor: string, creditor: string, timestamp: Date ) {
+    public async createCarFinance( ctx: Context, financeId: string, carId: string, payPerMonth: string, debtor: string, creditor: string, timestamp: string ) {
         console.info('============= START : createCarFinance ===========');
 
         const carInString = await this.queryCar( ctx, carId );
@@ -248,15 +248,17 @@ export class FabCar extends Contract {
             carId,
             price: car.price,
             payment: 0,
-            payPerMonth,
+            payPerMonth: +payPerMonth,
             debtor,
             creditor,
-            timestamp,
+            timestamp: new Date( Date.parse( timestamp ) ),
         } as CarFinancing;
 
         await ctx.stub.putState(financeId, Buffer.from(JSON.stringify(financing)));
 
-        const key = ctx.stub.createCompositeKey( buyCarIndex, [financeId,carId,debtor,creditor,timestamp.getFullYear().toString(),( timestamp.getMonth() + 1).toString(), timestamp.getDate().toString()] );
+        const date = financing.timestamp;
+
+        const key = ctx.stub.createCompositeKey( buyCarIndex, [financeId,carId,debtor,creditor,date.getFullYear().toString(),( date.getMonth() + 1).toString(), date.getDate().toString()] );
         await ctx.stub.putState( key, Buffer.from([0x00]) );
 
         //put car into in finance
@@ -266,7 +268,7 @@ export class FabCar extends Contract {
         console.info('============= END : createCarFinance ===========');
     }
 
-    public async payCarFinance( ctx: Context, financeId: string, paymentId: string, payment: number, debtor: string, creditor: string, timestamp: Date ) {
+    public async payCarFinance( ctx: Context, financeId: string, paymentId: string, payment: string, debtor: string, creditor: string, timestamp: string ) {
         console.info('============= START : payCarFinance ===========');
 
         const financeInString = await this.queryCarFinance( ctx, financeId );
@@ -278,19 +280,21 @@ export class FabCar extends Contract {
         const carPayment: CarFinancingPayment = {
             docType: "carFinancingPayment",
             financeId,
-            payment,
+            payment: +payment,
             debtor,
             creditor,
-            timestamp,
+            timestamp: new Date( Date.parse( timestamp ) ),
         } as CarFinancingPayment;
 
         await ctx.stub.putState(paymentId, Buffer.from(JSON.stringify(carPayment)));
 
+        const date = carPayment.timestamp;
+
         ///paymentId~financeId~debtor~creditor~year~month-day
-        const key = ctx.stub.createCompositeKey( payCarIndex, [paymentId,financeId,debtor,creditor,timestamp.getFullYear().toString(),( timestamp.getMonth() + 1).toString(), timestamp.getDate().toString()] );
+        const key = ctx.stub.createCompositeKey( payCarIndex, [paymentId,financeId,debtor,creditor,date.getFullYear().toString(),( date.getMonth() + 1).toString(), date.getDate().toString()] );
         await ctx.stub.putState( key, Buffer.from([0x00]) );
 
-        finance.payment += payment;
+        finance.payment += +payment;
         await ctx.stub.putState( financeId, Buffer.from( JSON.stringify( finance ) ) );
         ///change ownership if payment is full
         if ( finance.payment >= finance.price ) {
