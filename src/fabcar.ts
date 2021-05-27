@@ -233,6 +233,33 @@ export class FabCar extends Contract {
         return JSON.stringify(allResults);
     }
 
+    public async queryAllCarFinancePaymentByFinance(ctx: Context, financeId: string): Promise<string> {
+        const allResults = [];
+        for await ( const { key, value } of ctx.stub.getStateByPartialCompositeKey(payCarIndex, [financeId]) ) {
+            const strValue = Buffer.from(value).toString('utf8');
+            let record;
+            try {
+                record = JSON.parse(strValue);
+                if ( record?.docType !== "carFinancingPayment" ) continue;
+            } catch (err) {
+                console.log(err);
+                record = strValue;
+            }
+            allResults.push({ Key: key, Record: record });
+        }
+        console.info(allResults);
+        return JSON.stringify(allResults);
+    }
+
+    public async queryCarFinancePayment( ctx: Context, paymentId: string ) : Promise<string> {
+        const financeAsBytes = await ctx.stub.getState(paymentId);
+        if ( !financeAsBytes || financeAsBytes.length === 0 ) {
+            throw new Error(`${paymentId} does not exist`);
+        }
+        console.log( financeAsBytes.toString() );
+        return financeAsBytes.toString();
+    }
+
     public async createCarFinance( ctx: Context, financeId: string, carId: string, payPerMonth: string, debtor: string, creditor: string, timestamp: string ) {
         console.info('============= START : createCarFinance ===========');
 
