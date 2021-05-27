@@ -233,7 +233,7 @@ export class FabCar extends Contract {
         return JSON.stringify(allResults);
     }
 
-    public async createCarFinance( ctx: Context, financeId: string, carId: string, price: number, payPerMonth: number, debtor: string, creditor: string, timestamp: Date ) {
+    public async createCarFinance( ctx: Context, financeId: string, carId: string, payPerMonth: number, debtor: string, creditor: string, timestamp: Date ) {
         console.info('============= START : createCarFinance ===========');
 
         const carInString = await this.queryCar( ctx, carId );
@@ -246,7 +246,7 @@ export class FabCar extends Contract {
         const financing: CarFinancing = {
             docType: "carFinancing",
             carId,
-            price,
+            price: car.price,
             payment: 0,
             payPerMonth,
             debtor,
